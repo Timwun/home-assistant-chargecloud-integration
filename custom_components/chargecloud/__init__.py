@@ -10,10 +10,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN, UPDATE_INTERVAL, EvseId
-import traceback
+from .grouping import StationMetadata, find_device_group_id
+
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
@@ -31,7 +32,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = coordinator
     await coordinator.async_config_entry_first_refresh()
 
+    if coordinator.data:
+        metadata = StationMetadata.from_location(coordinator.data)
+        device_group_id = find_device_group_id(
+            metadata,
+            entry.data["evse_id"],
+            hass.config_entries.async_entries(DOMAIN),
+            exclude_entry_id=entry.entry_id,
+        )
+        updated_data = {
+            **entry.data,
+            **metadata.as_config_data(),
+            "device_group_id": device_group_id,
+        }
+        if updated_data != entry.data:
+            hass.config_entries.async_update_entry(entry, data=updated_data)
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(async_update_listener))
 
     return True
 
@@ -42,6 +60,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload all EVSE entries when manual device grouping changes."""
+    for other_entry in hass.config_entries.async_entries(DOMAIN):
+        await hass.config_entries.async_reload(other_entry.entry_id)
 
 
 class ChargeCloudDataUpdateCoordinator(DataUpdateCoordinator):
@@ -68,7 +92,9 @@ class ChargeCloudDataUpdateCoordinator(DataUpdateCoordinator):
         # Note: asyncio.TimeoutError and aiohttp.ClientError are already
         # handled by the data update coordinator.
         async with async_timeout.timeout(10):
-            location, smart_call_data = await self.api.perform_smart_api_call(self.evse_id, self.smart_call_data)
+            location, smart_call_data = await self.api.perform_smart_api_call(
+                self.evse_id, self.smart_call_data
+            )
             self.smart_call_data = smart_call_data
             if location is None:
                 _LOGGER.info("received empty update")

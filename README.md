@@ -10,3 +10,9 @@ It used by [ladenetz.de](https://ladenetz.de/) and other charging networks in eu
 
 This integration reads real-time availability status of public EV chargers from chargecloud.de's api.
 To install, simply use HACS. Then add an integration and select chargecloud. It will ask you for the EVSE-ID you want to monitor.
+
+Each configured EVSE creates its own status sensor. EVSEs from the same provider
+and Chargecloud location are grouped under one Home Assistant device; address
+and proximity are used as fallbacks. Add each port you want to monitor
+separately. The integration options let you keep an EVSE separate or manually
+merge it with other configured EVSEs.

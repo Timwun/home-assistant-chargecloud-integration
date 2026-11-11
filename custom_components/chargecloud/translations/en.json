@@ -16,5 +16,21 @@
                 }
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Device grouping",
+                "description": "Choose automatic grouping, keep this EVSE separate, or merge it with other configured EVSEs.",
+                "data": {
+                    "grouping_mode": "Grouping mode",
+                    "merge_with": "Merge with EVSEs"
+                },
+                "data_description": {
+                    "grouping_mode": "Automatic matching uses provider and location ID, then address, then coordinates within 25 m.",
+                    "merge_with": "Select other configured EVSEs to explicitly place them on the same device."
+                }
+            }
+        }
     }
 }

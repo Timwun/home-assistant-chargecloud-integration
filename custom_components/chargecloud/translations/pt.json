@@ -16,5 +16,21 @@
                 }
             }
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Agrupamento de dispositivos",
+                "description": "Escolha o agrupamento automático, mantenha este EVSE separado ou junte-o a outros EVSE configurados.",
+                "data": {
+                    "grouping_mode": "Modo de agrupamento",
+                    "merge_with": "Juntar com EVSEs"
+                },
+                "data_description": {
+                    "grouping_mode": "O agrupamento automático usa o fornecedor e o ID do local, depois o endereço e, por fim, coordenadas até 25 m.",
+                    "merge_with": "Selecione outros EVSE configurados para os colocar explicitamente no mesmo dispositivo."
+                }
+            }
+        }
     }
 }
