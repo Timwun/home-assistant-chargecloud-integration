@@ -1,7 +1,9 @@
 {
     "config": {
         "abort": {
-            "already_configured": "Equipamento já configurado"
+            "already_configured": "EVSE já configurado",
+            "evse_added": "O EVSE foi adicionado à estação existente.",
+            "merge_station_entries": "Esta estação tem várias entradas. Junte-as nas opções de uma entrada da estação."
         },
         "error": {
             "cannot_connect": "Falha na ligação",
@@ -21,14 +23,14 @@
         "step": {
             "init": {
                 "title": "Agrupamento de dispositivos",
-                "description": "Escolha o agrupamento automático, mantenha este EVSE separado ou junte-o a outros EVSE configurados.",
+                "description": "Mantenha portas selecionadas em dispositivos próprios ou junte entradas duplicadas da estação.",
                 "data": {
-                    "grouping_mode": "Modo de agrupamento",
-                    "merge_with": "Juntar com EVSEs"
+                    "split_evse_ids": "Manter estas portas em dispositivos separados",
+                    "merge_stations": "Juntar estas entradas da estação"
                 },
                 "data_description": {
-                    "grouping_mode": "O agrupamento automático usa o fornecedor e o ID do local, depois o endereço e, por fim, coordenadas até 25 m.",
-                    "merge_with": "Selecione outros EVSE configurados para os colocar explicitamente no mesmo dispositivo."
+                    "split_evse_ids": "Por padrão, todas as portas desta estação partilham um dispositivo.",
+                    "merge_stations": "Mover sensores EVSE e os seus registos para esta entrada da estação."
                 }
             }
         }

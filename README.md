@@ -12,7 +12,8 @@ This integration reads real-time availability status of public EV chargers from 
 To install, simply use HACS. Then add an integration and select chargecloud. It will ask you for the EVSE-ID you want to monitor.
 
 Each configured EVSE creates its own status sensor. EVSEs from the same provider
-and Chargecloud location are grouped under one Home Assistant device; address
-and proximity are used as fallbacks. Add each port you want to monitor
-separately. The integration options let you keep an EVSE separate or manually
-merge it with other configured EVSEs.
+and Chargecloud location belong to one station config entry and one Home
+Assistant device; address and proximity are used as fallbacks. Add each port you
+want to monitor separately: a later EVSE at the same station is added to its
+existing entry. The station options let you split selected ports into separate
+devices or merge legacy duplicate station entries.

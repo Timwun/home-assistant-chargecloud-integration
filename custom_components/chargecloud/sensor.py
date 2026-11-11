@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ChargeCloudDataUpdateCoordinator
 from .const import DOMAIN, EvseId
-from .grouping import device_group_id_for_entry
+from .station import OPTION_SPLIT_EVSE_IDS, StationMetadata, configured_evse_ids
 
 
 async def async_setup_entry(
@@ -23,22 +23,25 @@ async def async_setup_entry(
 ) -> None:
     """Set up a Geocaching sensor entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    device_group_id = device_group_id_for_entry(
-        entry, hass.config_entries.async_entries(DOMAIN)
+    evse_ids = configured_evse_ids(entry.data)
+    metadata = StationMetadata.from_config_data(entry.data)
+    device_name = (
+        metadata.device_name
+        if metadata is not None
+        else entry.title
     )
+    station_id = entry.data.get("station_id") or f"station:{entry.entry_id}"
+    split_evse_ids = set(entry.options.get(OPTION_SPLIT_EVSE_IDS, []))
     async_add_entities(
         [
             ChargeCloudRealtimeSensor(
-                evse_id=entry.data["evse_id"],
+                evse_id=evse_id,
                 coordinator=coordinator,
-                device_group_id=device_group_id,
-                device_name=entry.data.get("location_name")
-                or (
-                    coordinator.data.name
-                    if coordinator.data
-                    else entry.data["evse_id"]
-                ),
+                station_id=station_id,
+                device_name=device_name,
+                split=evse_id in split_evse_ids,
             )
+            for evse_id in evse_ids
         ]
     )
 
@@ -55,8 +58,9 @@ class ChargeCloudRealtimeSensor(
         self,
         evse_id: EvseId,
         coordinator: ChargeCloudDataUpdateCoordinator,
-        device_group_id: str,
+        station_id: str,
         device_name: str,
+        split: bool,
     ) -> None:
         """Initialize the Sensor."""
         super().__init__(coordinator)
@@ -68,22 +72,25 @@ class ChargeCloudRealtimeSensor(
         self._attr_device_class = SensorDeviceClass.ENUM
         self._attr_native_unit_of_measurement = None
         self._attr_state_class = None
+        device_identifier = (
+            f"{station_id}:evse:{evse_id}" if split else station_id
+        )
         self._attr_device_info = DeviceInfo(
-            name=device_name,
-            identifiers={(DOMAIN, device_group_id)},
+            name=f"{device_name} - {evse_id}" if split else device_name,
+            identifiers={(DOMAIN, device_identifier)},
             entry_type=None,
         )
         self._attr_options = list(typing.get_args(chargecloudapi.Status))
         # read data from coordinator, which should have data by now
         self._read_coordinator_data()
 
+    @property
+    def available(self) -> bool:
+        """Only make the sensor available when its EVSE lookup succeeded."""
+        return super().available and self.evse_id in (self.coordinator.data or {})
+
     def _get_location(self) -> Location | None:
-        if self.coordinator.data:
-            location = self.coordinator.data
-            for evse in location.evses:
-                if evse.id == self.evse_id:
-                    return location
-        return None
+        return (self.coordinator.data or {}).get(self.evse_id)
 
     def _get_evse(self) -> chargecloudapi.Evse | None:
         location = self._get_location()
@@ -121,8 +128,10 @@ class ChargeCloudRealtimeSensor(
             "country": location.country,
             "latitude": location.coordinates.latitude,
             "longitude": location.coordinates.longitude,
-            "update_opid": self.coordinator.smart_call_data.operator_id.name
-            if self.coordinator.smart_call_data
+            "update_opid": self.coordinator.smart_call_data[
+                self.evse_id
+            ].operator_id.name
+            if self.coordinator.smart_call_data.get(self.evse_id)
             else None,
             "connectors": [
                 {
